@@ -24,6 +24,9 @@ testing_data <- read.csv("housing_test.csv") |> na.omit()
 
 x <- model.matrix(Sale_Price ~ ., training_data)[,-1] 
 y <- training_data[, "Sale_Price"]
+
+x2 <- model.matrix(Sale_Price ~ .,testing_data)[, -1]
+y2 <- testing_data$Sale_Price
 ```
 
 ## a)
@@ -68,3 +71,20 @@ enet_test_RMSE
 ```
 The selected tuning parameter is `r enet.fit$bestTune`. The test error is `r enet_test_RMSE`. 1SE is not applicable in elastic net because it has 2 tuning parameters, alpha and lambda. There is no way to apply one standard error of the minimum to 2 parameter. Therefore, 1SE is not applicable here.
 
+## c)
+```{r}
+set.seed(2026)
+pls_fit <- train(x, y,
+                 method = "pls",
+                 tuneGrid = data.frame(ncomp = 1:ncol(x)),
+                 trControl = ctrl1,
+                 preProcess = c("center", "scale"))
+
+predy2_pls2 <- predict(pls_fit, newdata = x2)
+pls_test_RMSE = sqrt(mean((y2 - predy2_pls2)^2))
+pls_test_RMSE
+
+ggplot(pls_fit, highlight = TRUE)
+pls_fit$bestTune
+```
+The test error is `r pls_test_RMSE`. The number of components in the model is `r pls_fit$bestTune`. 
