@@ -88,3 +88,13 @@ ggplot(pls_fit, highlight = TRUE)
 pls_fit$bestTune
 ```
 The test error is `r pls_test_RMSE`. The number of components in the model is `r pls_fit$bestTune`. 
+
+## d)
+```{r}
+lasso_test_RMSE
+enet_test_RMSE
+pls_test_RMSE
+```
+Among the three tests, the lasso model has the smallest RMSE: `r lasso_test_RMSE`. Thus it is the best model.
+
+
