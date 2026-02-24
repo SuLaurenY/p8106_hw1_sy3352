@@ -48,3 +48,23 @@ lasso_test_RMSE = sqrt(mean((lasso_pred - testing_data$Sale_Price)^2))
 lasso_test_RMSE
 ```
 The selected tuning parameter is `r cv.lasso$lambda.1se`. The test error is `r lasso_test_RMSE`. Using 1SE rule, the number of predictors included is `r sum(coef_1se != 0) - 1`.
+
+## b)
+```{r}
+ctrl1 <- trainControl(method = "cv", number = 10)
+
+set.seed(2026)
+enet.fit <- train(Sale_Price ~ .,
+                  data = training_data,
+                  method = "glmnet",
+                  tuneGrid = expand.grid(alpha = seq(0, 1, length = 21), 
+                                         lambda = exp(seq(12, -5, length = 100))),
+                  trControl = ctrl1)
+enet.fit$bestTune
+
+enet.pred <- predict(enet.fit, newdata = testing_data) 
+enet_test_RMSE = sqrt(mean((enet.pred - testing_data[, "Sale_Price"])^2))
+enet_test_RMSE
+```
+The selected tuning parameter is `r enet.fit$bestTune`. The test error is `r enet_test_RMSE`. 1SE is not applicable in elastic net because it has 2 tuning parameters, alpha and lambda. There is no way to apply one standard error of the minimum to 2 parameter. Therefore, 1SE is not applicable here.
+
