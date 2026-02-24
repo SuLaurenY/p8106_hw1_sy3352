@@ -9,22 +9,42 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r, echo = T, message = FALSE, results='hide', warning=FALSE}
+library(glmnet)
+library(caret) 
+library(tidymodels) 
+library(corrplot) 
+library(ggplot2)
+library(plotmo) 
 ```
 
-## Including Plots
+```{r}
+training_data <- read.csv("housing_training.csv") |> na.omit()
+testing_data <- read.csv("housing_test.csv") |> na.omit()
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+x <- model.matrix(Sale_Price ~ ., training_data)[,-1] 
+y <- training_data[, "Sale_Price"]
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## a)
+```{r}
+set.seed(2026)
+cv.lasso <- cv.glmnet(x, y, 
+                      alpha = 1, 
+                      lambda = exp(seq(12, -5, length = 100)))
+
+plot(cv.lasso)
+plot_glmnet(cv.lasso$glmnet.fit)
+cv.lasso$lambda.1se
+
+coef_1se <- predict(cv.lasso, s = "lambda.1se", type = "coefficients")
+sum(coef_1se != 0) - 1
+
+lasso_pred <- predict(
+  cv.lasso, newx = model.matrix(Sale_Price ~ ., testing_data)[,-1], 
+             s = "lambda.1se", type = "response")
+
+lasso_test_RMSE = sqrt(mean((lasso_pred - testing_data$Sale_Price)^2))
+lasso_test_RMSE
+```
+The selected tuning parameter is `r cv.lasso$lambda.1se`. The test error is `r lasso_test_RMSE`. Using 1SE rule, the number of predictors included is `r sum(coef_1se != 0) - 1`.
