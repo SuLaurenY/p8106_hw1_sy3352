@@ -97,4 +97,41 @@ pls_test_RMSE
 ```
 Among the three tests, the lasso model has the smallest RMSE: `r lasso_test_RMSE`. Thus it is the best model.
 
+## e)
+```{r}
+set.seed(2026)
+lasso.fit <- train(Sale_Price ~ .,
+                   data = training_data,
+                   method = "glmnet",
+                   tuneGrid = expand.grid(alpha = 1, 
+                                          lambda = exp(seq(12, -5, length = 100))),
+                   trControl = ctrl1)
+plot(lasso.fit, xTrans = log)
 
+lasso.fit$bestTune
+
+coef_caret_lasso = coef(lasso.fit$finalModel, lasso.fit$bestTune$lambda)
+sum(coef_caret_lasso != 0) - 1
+
+lasso.pred.caret <- predict(lasso.fit, newdata = testing_data)
+lasso_caret_RMSE = sqrt(mean((lasso.pred.caret - testing_data$Sale_Price)^2))
+lasso_caret_RMSE
+```
+
+To have the lasso with glmnet in a) have comparable result to the caret method, check the result use lambda.min:
+```{r}
+set.seed(2026)
+cv.lasso$lambda.min
+
+coef_min <- predict(cv.lasso, s = "lambda.min", type = "coefficients")
+sum(coef_min != 0) - 1
+
+lasso_pred_min <- predict(
+  cv.lasso, newx = model.matrix(Sale_Price ~ ., testing_data)[,-1], 
+             s = "lambda.min", type = "response")
+
+lasso_min_test_RMSE = sqrt(mean((lasso_pred_min - testing_data$Sale_Price)^2))
+lasso_min_test_RMSE
+```
+
+From the two tests (both using lambda.min), the number of predictors are the same: `r sum(coef_caret_lasso != 0) - 1`; The selected lambda are quite different with glmnet being `r cv.lasso$lambda.min` and caret being `r lasso.fit$bestTune`; the test RMSE are slightly different with glmnet being `r lasso_min_test_RMSE` and caret being `r lasso_caret_RMSE`. The possible reason behind such discrepancies is that the caret implementation did not specify lambda. It did not pass my specified lambda.grid, rather it used its built in default grid of lambda during cross validation. But the glmnet did use my lambda grid, so the two packages were run with different grid of lambda.
